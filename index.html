@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Holo Mint</title>
+  <meta name="description" content="이름이 곧 뽑기권. WebGPU로 빛을 계산하는 홀로그래픽 카드를 개봉해 보세요." />
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="Holo Mint — 이름이 곧 뽑기권" />
+  <meta property="og:description" content="이름을 넣고 포장을 찢어 보세요. 0.5% 확률의 원 오브 원은 누구 이름일까요?" />
+  <meta name="twitter:card" content="summary" />
+  <meta name="theme-color" content="#090a0c" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" />
+  <link rel="stylesheet" href="/src/style.css" />
+</head>
+<body>
+  <main class="app">
+    <section class="stage">
+      <canvas id="card" tabindex="0" aria-label="봉인된 홀로그래픽 카드. 아래로 드래그하거나 Enter 키로 개봉합니다."></canvas>
+      <div class="badge" id="badge" aria-live="polite"></div>
+      <p class="hint" id="hint">DRAG DOWN TO TEAR ↓</p>
+      <div class="corner tl">HOLO/MINT</div>
+      <div class="corner tr" id="serial">NO. ??? / 999</div>
+      <div class="stage-tools">
+        <button type="button" class="tool" id="gyro" hidden>기울여 보기</button>
+        <button type="button" class="tool" id="sound" aria-pressed="true">소리 켜짐</button>
+      </div>
+    </section>
+
+    <aside class="panel">
+      <header>
+        <p class="eyebrow">Edition generator · WebGPU</p>
+        <h1>이름이 곧<br />뽑기권</h1>
+        <p class="lede">이름을 넣고 포장을 찢어 보세요. 같은 이름은 어느 기기에서든 같은 카드가 나옵니다. 0.5% 확률의 <b>원 오브 원</b>은 누구 이름일까요?</p>
+      </header>
+
+      <form id="form" autocomplete="off">
+        <label>
+          <span>이름 <em>Title · 등급을 결정</em></span>
+          <input name="title" maxlength="28" enterkeyhint="go" />
+        </label>
+        <label>
+          <span>한 줄 문구 <em>Tagline</em></span>
+          <input name="tagline" maxlength="48" />
+        </label>
+        <div class="chips" id="chips">
+          <button type="button">Light, computed.</button>
+          <button type="button">빛으로 만든 이름</button>
+          <button type="button">Made of photons.</button>
+          <button type="button">오늘도 반짝이는 중</button>
+        </div>
+        <div class="row">
+          <label>
+            <span>브랜드 <em>Brand</em></span>
+            <input name="brand" maxlength="14" />
+          </label>
+          <label>
+            <span>우측 하단 마크 <em>Mark</em></span>
+            <input name="mark" maxlength="16" />
+          </label>
+        </div>
+      </form>
+
+      <div class="actions">
+        <button type="button" class="solid" id="open">개봉하기</button>
+        <div class="row">
+          <button type="button" class="ghost" id="random">랜덤 이름</button>
+          <button type="button" class="ghost" id="share">링크 복사</button>
+        </div>
+      </div>
+
+      <section class="result" id="result" hidden>
+        <p class="result-tier" id="resultTier"></p>
+        <dl>
+          <div><dt>재질</dt><dd id="resultMaterial"></dd></div>
+          <div><dt>문양</dt><dd id="resultShape"></dd></div>
+          <div><dt>에디션</dt><dd id="resultEdition"></dd></div>
+        </dl>
+        <div class="result-actions">
+          <button type="button" class="ghost small" id="savePng">PNG 저장</button>
+          <button type="button" class="ghost small" id="saveVideo">영상 저장 · MP4</button>
+        </div>
+      </section>
+
+      <section class="duel-entry">
+        <div class="dex-head">
+          <h2>듀얼</h2>
+          <span>등급이 높으면 승리, 같으면 앞 번호가 승리</span>
+        </div>
+        <form id="duelForm" class="row" autocomplete="off">
+          <input name="rival" maxlength="28" placeholder="상대 이름 (비우면 랜덤)" aria-label="상대 이름" />
+          <button type="submit" class="ghost small">대결</button>
+        </form>
+      </section>
+
+      <details class="odds">
+        <summary>등급 확률</summary>
+        <ul id="oddsList"></ul>
+      </details>
+
+      <section class="dex">
+        <div class="dex-head">
+          <h2>내 도감</h2>
+          <span id="dexStats">아직 개봉한 카드가 없어요</span>
+        </div>
+        <ul id="dexList"></ul>
+      </section>
+
+      <footer>
+        <span id="status">WebGPU 초기화 중…</span>
+        <span>Rendered with <a href="https://github.com/vercel-labs/vgpu" target="_blank" rel="noreferrer">vgpu</a></span>
+      </footer>
+    </aside>
+  </main>
+
+  <dialog class="duel" id="duel" aria-labelledby="duelTitle">
+    <p class="eyebrow">Duel</p>
+    <h2 id="duelTitle">누구의 이름이 더 빛날까?</h2>
+    <div class="duel-grid">
+      <figure class="slot" id="slotA">
+        <div class="frame"><div class="pack"></div><img alt="" /></div>
+        <figcaption><b></b><span class="tier"></span><span class="ed"></span></figcaption>
+      </figure>
+      <div class="vs">VS</div>
+      <figure class="slot" id="slotB">
+        <div class="frame"><div class="pack"></div><img alt="" /></div>
+        <figcaption><b></b><span class="tier"></span><span class="ed"></span></figcaption>
+      </figure>
+    </div>
+    <p class="verdict" id="verdict" aria-live="polite"></p>
+    <div class="duel-actions">
+      <button type="button" class="ghost" id="duelShare">듀얼 링크 복사</button>
+      <button type="button" class="solid" id="duelClose">닫기</button>
+    </div>
+  </dialog>
+  <script type="module" src="/src/main.ts"></script>
+</body>
+</html>
