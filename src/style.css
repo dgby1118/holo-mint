@@ -157,3 +157,12 @@ footer a { color: var(--muted); }
   .vs { font-size: 11px; letter-spacing: .1em; }
   .duel h2 { font-size: 20px; }
 }
+
+/* Narrow stages: the centred badge collides with the corner labels, so it takes
+   the top-left slot and the HOLO/MINT label steps aside while it is shown. */
+@media (max-width: 560px) {
+  .badge { left: 16px; top: 14px; transform: translateY(-8px) scale(0.96); transform-origin: left center; padding: 6px 12px 6px 10px; font-size: 12px; gap: 8px; }
+  .badge.show { transform: none; }
+  .corner.tl { transition: opacity .3s; }
+  .stage:has(.badge.show) .corner.tl { opacity: 0; }
+}
